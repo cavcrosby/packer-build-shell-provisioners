@@ -7,27 +7,26 @@ JENKINS_DEB_PKG_URL="https://pkg.jenkins.io/debian-stable"
 VBOX_DEB_PKG_URL="https://download.virtualbox.org/virtualbox/6.0.24/virtualbox-6.0_6.0.24-139119~Debian~buster_amd64.deb"
 VBOX_DEB_PKGNAME="$(basename $VBOX_DEB_PKG_URL)"
 
-echo $SSH_PASSWORD | sudo -S apt-get update
-echo $SSH_PASSWORD | sudo -S apt-get dist-upgrade --assume-yes
-
+echo $SSH_PASSWORD | sudo --stdin apt-get update
+echo $SSH_PASSWORD | sudo --stdin apt-get dist-upgrade --assume-yes
 echo "!!! Setting up jenkins !!!"
 # running as root, install several pkgs and assign reap2sow1 to sudo group
-echo $SSH_PASSWORD | sudo -S apt-get install sudo openjdk-11-jdk jq gpg git rsync zip wget --assume-yes
-echo $SSH_PASSWORD | sudo -S usermod --append --groups sudo reap2sow1
+echo $SSH_PASSWORD | sudo --stdin apt-get install sudo openjdk-11-jdk jq gpg git rsync zip wget --assume-yes
+echo $SSH_PASSWORD | sudo --stdin usermod --append --groups sudo reap2sow1
 
 # install kernel header for current kernel
-echo $SSH_PASSWORD | sudo -S apt-get install linux-headers-"$(uname -r)" --assume-yes
+echo $SSH_PASSWORD | sudo --stdin apt-get install linux-headers-"$(uname -r)" --assume-yes
 
 # install virtualbox
 wget --output-document "$VBOX_DEB_PKGNAME" "$VBOX_DEB_PKG_URL"
-echo $SSH_PASSWORD | sudo -S apt-get install "./${VBOX_DEB_PKGNAME}" --assume-yes
+echo $SSH_PASSWORD | sudo --stdin apt-get install "./${VBOX_DEB_PKGNAME}" --assume-yes
 
 # install jenkins from stable release
 wget --output-document - "$JENKINS_GPG_KEY_URL" | sudo apt-key add -
 echo "deb $JENKINS_DEB_PKG_URL binary/" > "/etc/apt/sources.list.d/jenkins.list"
-echo $SSH_PASSWORD | sudo -S apt-get update
-echo $SSH_PASSWORD | sudo -S apt-get install jenkins --assume-yes
-echo $SSH_PASSWORD | sudo -S systemctl start jenkins
+echo $SSH_PASSWORD | sudo --stdin apt-get update
+echo $SSH_PASSWORD | sudo --stdin apt-get install jenkins --assume-yes
+echo $SSH_PASSWORD | sudo --stdin systemctl start jenkins
 
 # install few aliases
 cat << _EOF_ > /home/reap2sow1/.bash_aliases
@@ -40,7 +39,6 @@ cat << _EOF_ > /home/reap2sow1/.bash_aliases
     alias ls='ls --color=auto'
 _EOF_
 echo "!!! End setting up jenkins !!!"
-
 wget "http://$PACKER_HTTP_ADDR/packerbuild.conf"
-echo $SSH_PASSWORD | sudo -S mv ./packerbuild.conf /etc/
+echo $SSH_PASSWORD | sudo --stdin mv ./packerbuild.conf /etc/
 echo "!!! End of provisioner script !!!"
