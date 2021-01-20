@@ -14,7 +14,7 @@ echo "!!! Setting up jenkins !!!"
 echo $SSH_PASSWORD | sudo --stdin apt-get install sudo openjdk-11-jdk jq gpg git rsync zip wget --assume-yes
 echo $SSH_PASSWORD | sudo --stdin usermod --append --groups sudo reap2sow1
 
-# install kernel header for current kernel
+# install kernel headers for current kernel
 echo $SSH_PASSWORD | sudo --stdin apt-get install linux-headers-"$(uname -r)" --assume-yes
 
 # install virtualbox
@@ -23,7 +23,9 @@ echo $SSH_PASSWORD | sudo --stdin apt-get install "./${VBOX_DEB_PKGNAME}" --assu
 
 # install jenkins from stable release
 wget --output-document - "$JENKINS_GPG_KEY_URL" | sudo apt-key add -
-echo "deb $JENKINS_DEB_PKG_URL binary/" > "/etc/apt/sources.list.d/jenkins.list"
+# NOTE: this is one case where sudo cannot expect the password to come from stdin, 
+# betting on sudo just not asking for the password again
+echo "deb $JENKINS_DEB_PKG_URL binary/" | sudo tee --append "/etc/apt/sources.list.d/jenkins.list"
 echo $SSH_PASSWORD | sudo --stdin apt-get update
 echo $SSH_PASSWORD | sudo --stdin apt-get install jenkins --assume-yes
 echo $SSH_PASSWORD | sudo --stdin systemctl start jenkins
