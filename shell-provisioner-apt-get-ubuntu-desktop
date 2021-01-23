@@ -5,6 +5,6 @@ echo "!!! Start of provisioner script !!!"
 echo $SSH_PASSWORD | sudo --stdin apt-get update
 echo $SSH_PASSWORD | sudo --stdin apt-get dist-upgrade --assume-yes
 echo $SSH_PASSWORD | sudo --stdin tasksel install ubuntu-desktop
-wget "http://$PACKER_HTTP_ADDR/packerbuild.conf"
-echo $SSH_PASSWORD | sudo --stdin mv ./packerbuild.conf /etc/
+wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
+echo $SSH_PASSWORD | sudo --stdin mv ./packerbuilds.conf /etc/
 echo "!!! End of provisioner script !!!"

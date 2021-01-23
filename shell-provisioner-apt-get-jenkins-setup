@@ -41,6 +41,6 @@ cat << _EOF_ > /home/reap2sow1/.bash_aliases
     alias ls='ls --color=auto'
 _EOF_
 echo "!!! End setting up jenkins !!!"
-wget "http://$PACKER_HTTP_ADDR/packerbuild.conf"
-echo $SSH_PASSWORD | sudo --stdin mv ./packerbuild.conf /etc/
+wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
+echo $SSH_PASSWORD | sudo --stdin mv ./packerbuilds.conf /etc/
 echo "!!! End of provisioner script !!!"
