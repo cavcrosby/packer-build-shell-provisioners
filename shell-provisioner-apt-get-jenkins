@@ -1,0 +1,62 @@
+#!/bin/bash
+
+sleep 30
+
+echo "!!! Start of provisioner script !!!"
+JENKINS_GPG_KEY_URL="https://pkg.jenkins.io/debian-stable/jenkins.io.key"
+JENKINS_DEB_PKG_URL="https://pkg.jenkins.io/debian-stable"
+JENKINS_DEPENDENCIES=(
+    openjdk-11-jdk
+)
+SYSTEM_DEPENDENCIES=(
+    sudo 
+    git
+    wget 
+)
+
+# normal VM updating, upgrading distro pkgs
+echo "$SSH_PASSWORD" | sudo --stdin apt-get update
+echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
+
+# NOTE: debian is notorious for not having /sbin (any variant,
+# e.g. /usr/sbin/) in the PATH, so will add it for reap2sow1
+echo "" >> "${HOME}/.bashrc"
+echo "export PATH=\${PATH}:/usr/sbin" >> "${HOME}/.bashrc"
+
+echo "!!! Setting up jenkins !!!"
+# running as root, install several pkgs and assign reap2sow1 to sudo group
+# NOTES: SYSTEM_DEPENDENCIES are not project dependents, mainly nice
+# to haves on the system. Also, sudo may or may not exist on the system 
+# already. Will still run steps incase.
+echo "$SSH_PASSWORD" | sudo --stdin apt-get install "${JENKINS_DEPENDENCIES[@]}" "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
+echo "$SSH_PASSWORD" | sudo --stdin usermod --append --groups sudo reap2sow1
+
+# install jenkins from stable release
+wget --output-document - "$JENKINS_GPG_KEY_URL" | sudo apt-key add -
+# NOTE: this is one case where sudo cannot expect the password to come from stdin, 
+# betting on sudo just not asking for the password again
+echo "deb $JENKINS_DEB_PKG_URL binary/" | sudo tee --append "/etc/apt/sources.list.d/jenkins.list"
+echo "$SSH_PASSWORD" | sudo --stdin apt-get update
+echo "$SSH_PASSWORD" | sudo --stdin apt-get install jenkins --assume-yes
+echo "$SSH_PASSWORD" | sudo --stdin systemctl start jenkins
+
+echo "!!! End setting up jenkins !!!"
+
+# install few aliases
+cat << _EOF_ > /home/reap2sow1/.bash_aliases
+    alias egrep='egrep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias grep='grep --color=auto'
+    alias l='ls -CF'
+    alias la='ls -A'
+    alias ll='ls -alF'
+    alias ls='ls --color=auto'
+_EOF_
+
+# packerbuilds.conf MAY contain env vars from build env
+wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
+echo "$SSH_PASSWORD" | sudo --stdin mv ./packerbuilds.conf /etc/
+
+echo "!!! End of provisioner script !!!"
+
+exit 0
