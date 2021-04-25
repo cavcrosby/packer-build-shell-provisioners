@@ -20,8 +20,10 @@ echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
 
 # NOTE: debian is notorious for not having /sbin (any variant,
 # e.g. /usr/sbin/) in the PATH, so will add it for reap2sow1
-echo "" >> "${HOME}/.bashrc"
-echo "export PATH=\${PATH}:/usr/sbin" >> "${HOME}/.bashrc"
+{
+    echo ""
+    echo "export PATH=\${PATH}:/usr/sbin"
+} >> "${HOME}/.bashrc"
 
 echo "!!! Setting up jenkins !!!"
 # running as root, install several pkgs and assign reap2sow1 to sudo group
