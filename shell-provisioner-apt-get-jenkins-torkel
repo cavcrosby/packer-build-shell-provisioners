@@ -3,8 +3,11 @@
 sleep 30
 
 echo "!!! Start of provisioner script !!!"
+
 JENKINS_GPG_KEY_URL="https://pkg.jenkins.io/debian-stable/jenkins.io.key"
 JENKINS_DEB_PKG_URL="https://pkg.jenkins.io/debian-stable"
+VBOX_DEB_PKG_URL="https://download.virtualbox.org/virtualbox/6.0.24/virtualbox-6.0_6.0.24-139119~Debian~buster_amd64.deb"
+VBOX_DEB_PKGNAME="$(basename $VBOX_DEB_PKG_URL)"
 JENKINS_DEPENDENCIES=(
     openjdk-11-jdk
 )
@@ -29,6 +32,7 @@ echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
 } >> "${HOME}/.bashrc"
 
 echo "!!! Setting up jenkins !!!"
+
 # running as root, install several pkgs and assign reap2sow1 to sudo group
 # NOTES: SYSTEM_DEPENDENCIES are not project dependents, some are 
 # mainly nice to haves on the system. Also, sudo may or may not exist 
@@ -46,6 +50,13 @@ echo "$SSH_PASSWORD" | sudo --stdin apt-get install jenkins --assume-yes
 echo "$SSH_PASSWORD" | sudo --stdin systemctl start jenkins
 
 echo "!!! End setting up jenkins !!!"
+
+# install kernel headers for current kernel
+echo "$SSH_PASSWORD" | sudo --stdin apt-get install linux-headers-"$(uname -r)" --assume-yes
+
+# install virtualbox
+wget --output-document "$VBOX_DEB_PKGNAME" "$VBOX_DEB_PKG_URL"
+echo "$SSH_PASSWORD" | sudo --stdin apt-get install "./${VBOX_DEB_PKGNAME}" --assume-yes
 
 # install few aliases
 cat << _EOF_ > /home/reap2sow1/.bash_aliases
