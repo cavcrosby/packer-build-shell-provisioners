@@ -11,10 +11,10 @@ export SHELL_DOTFILE_NAME=".bashrc"
 # y ==> yes
 export SHELLFUNCS_AUTOMATED_INSTALL="y"
 SYSTEM_DEPENDENCIES=(
-    sudo
     curl
-    gnupg
     git
+    gnupg
+    sudo
     wget 
 )
 
@@ -49,6 +49,6 @@ echo "$SSH_PASSWORD" | sudo tasksel install desktop
 
 # packerbuilds.conf MAY contain env vars from build env
 wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
-echo $SSH_PASSWORD | sudo --stdin mv ./packerbuilds.conf /etc/
+echo "$SSH_PASSWORD" | sudo --stdin mv ./packerbuilds.conf /etc/
 
 echo "!!! End of provisioner script !!!"
