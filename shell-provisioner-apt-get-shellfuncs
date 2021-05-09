@@ -1,0 +1,57 @@
+#!/bin/bash
+
+sleep 30
+
+echo "!!! Start of provisioner script !!!"
+
+# won't be installing dotfiles, manually set this env var
+# NOTE: these env vars will be for settings up repos
+SSH_DIR_PATH="${HOME}/.ssh"
+USER_NAME="reap2sow1"
+# y ==> yes
+export SHELLFUNCS_AUTOMATED_INSTALL="y"
+JENKINS_INFRASTRUCTURE_REPO_URL="https://${USER_NAME}:${GITHUB_SECRET}@github.com/${USER_NAME}/jenkins-infrastructure.git"
+JENKINS_INFRASTRUCTURE_REPO_NAME="$(basename "$JENKINS_INFRASTRUCTURE_REPO_URL")"
+SYSTEM_DEPENDENCIES=(
+    build-essential
+    curl
+    git
+    gnupg
+    python3
+    sudo
+    wget
+)
+
+# normal VM updating, upgrading distro pkgs
+echo "$SSH_PASSWORD" | sudo --stdin apt-get update
+echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
+
+# NOTES: installs some 'nice to have' pkgs. Also
+# makes sure I am part of the sudoer group!
+echo "$SSH_PASSWORD" | sudo --stdin apt-get install "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
+echo "$SSH_PASSWORD" | sudo --stdin usermod --append --groups sudo "$USER_NAME"
+
+# NOTES: extract authorized_keys for 'jenkins' user (runner of Jenkins builds).
+# Also assumes GIT_REPOS_PATH is just HOME.
+git clone "$JENKINS_INFRASTRUCTURE_REPO_URL" "$JENKINS_INFRASTRUCTURE_REPO_NAME"
+if ! [ -d "$SSH_DIR_PATH" ]; then mkdir --parents "$SSH_DIR_PATH"; chmod 700 "$SSH_DIR_PATH"; fi
+cat "${JENKINS_INFRASTRUCTURE_REPO_NAME}/configs/authorized_keys" >> "${SSH_DIR_PATH}/authorized_keys"
+
+# config sshd, first sed makes backup of original sshd_config (sshd_config.bak)
+# sed 's/old_text/new_text/' ... (the three '/'s can be replaced with
+# any char, just a delimiter)
+echo "$SSH_PASSWORD" | sudo --stdin sed --in-place=.bak --regexp-extended 's|^#?PubkeyAuthentication.+|PubkeyAuthentication yes|' /etc/ssh/sshd_config
+echo "$SSH_PASSWORD" | sudo --stdin sed --in-place --regexp-extended 's|^#?PasswordAuthentication.+|PasswordAuthentication no|' /etc/ssh/sshd_config
+echo "$SSH_PASSWORD" | sudo --stdin sed --in-place --regexp-extended 's|^#?AuthorizedKeysFile.+|AuthorizedKeysFile    .ssh/authorized_keys|' /etc/ssh/sshd_config
+
+# for good practice, disable root account
+# credits go to:
+# https://unix.stackexchange.com/questions/383301/should-i-disable-the-root-account-on-my-debian-pc-for-security
+echo "$SSH_PASSWORD" | sudo passwd --delete root
+echo "$SSH_PASSWORD" | sudo passwd --lock root
+
+# packerbuilds.conf MAY contain env vars from build env
+wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
+echo "$SSH_PASSWORD" | sudo --stdin mv ./packerbuilds.conf /etc/
+
+echo "!!! End of provisioner script !!!"
