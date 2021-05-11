@@ -10,10 +10,13 @@ export GIT_REPOS_PATH="${HOME}/git"
 export SHELL_DOTFILE_NAME=".bashrc"
 # y ==> yes
 export SHELLFUNCS_AUTOMATED_INSTALL="y"
+MOUNT_FILE_PATH="/mnt"
 SYSTEM_DEPENDENCIES=(
+    build-essential
     curl
     git
     gnupg
+    linux-headers-"$(uname -r)"
     sudo
     wget 
 )
@@ -46,6 +49,10 @@ echo "$SSH_PASSWORD" | sudo passwd --lock root
 
 echo "!!! Now installing debian desktop !!!"
 echo "$SSH_PASSWORD" | sudo tasksel install desktop
+
+echo "!!! Now installing VirtualBox Guest Additions !!!"
+echo "$SSH_PASSWORD" | sudo --stdin mount VBoxGuestAdditions.iso "$MOUNT_FILE_PATH"
+echo "$SSH_PASSWORD" | sudo --stdin "${MOUNT_FILE_PATH}/VBoxLinuxAdditions.run"
 
 # packerbuilds.conf MAY contain env vars from build env
 wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
