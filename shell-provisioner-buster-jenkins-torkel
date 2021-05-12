@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+#
 
 sleep 30
 
@@ -6,7 +8,7 @@ echo "!!! Start of provisioner script !!!"
 
 JENKINS_GPG_KEY_URL="https://pkg.jenkins.io/debian-stable/jenkins.io.key"
 JENKINS_DEB_PKG_URL="https://pkg.jenkins.io/debian-stable"
-VBOX_DEB_PKG_URL="https://download.virtualbox.org/virtualbox/6.0.24/virtualbox-6.0_6.0.24-139119~Debian~buster_amd64.deb"
+VBOX_DEB_PKG_URL="https://download.virtualbox.org/virtualbox/6.1.22/virtualbox-6.1_6.1.22-144080~Debian~buster_amd64.deb"
 VBOX_DEB_PKGNAME="$(basename $VBOX_DEB_PKG_URL)"
 JENKINS_DEPENDENCIES=(
     openjdk-11-jdk
