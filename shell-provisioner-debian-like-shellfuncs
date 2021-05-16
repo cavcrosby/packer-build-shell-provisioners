@@ -11,7 +11,6 @@ echo "!!! Start of provisioner script !!!"
 SSH_DIR_PATH="${HOME}/.ssh"
 USER_NAME="reap2sow1"
 # y ==> yes
-export SHELLFUNCS_AUTOMATED_INSTALL="y"
 JENKINS_INFRASTRUCTURE_REPO_URL="https://${USER_NAME}:${GITHUB_SECRET}@github.com/${USER_NAME}/jenkins-infrastructure.git"
 JENKINS_INFRASTRUCTURE_REPO_NAME="$(basename "$JENKINS_INFRASTRUCTURE_REPO_URL")"
 SYSTEM_DEPENDENCIES=(
