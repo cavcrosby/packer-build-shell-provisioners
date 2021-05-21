@@ -13,7 +13,7 @@ VBOX_DEB_PKGNAME="$(basename $VBOX_DEB_PKG_URL)"
 JENKINS_DEPENDENCIES=(
     openjdk-11-jdk
 )
-# TODO(conner@conneracrosby.tech): see about stacking shell provisioners together? e.g. all of them do run apt-get update, why not just make like a base shell provisioner?
+# TODO(cavcrosby): see about stacking shell provisioners together? e.g. all of them do run apt-get update, why not just make like a base shell provisioner?
 # NOTE: sudo and gnupg are required. gnupg for dealing
 # with package public key pairs.
 SYSTEM_DEPENDENCIES=(
