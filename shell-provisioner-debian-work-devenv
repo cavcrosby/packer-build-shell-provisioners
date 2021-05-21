@@ -34,7 +34,7 @@ echo "$SSH_PASSWORD" | sudo --stdin usermod --append --groups sudo reap2sow1
 
 # setup and install shellfuncs repo
 mkdir "$GIT_REPOS_PATH"
-curl --silent https://raw.githubusercontent.com/reap2sow1/shellfuncs/main/install | bash
+curl --silent https://raw.githubusercontent.com/cavcrosby/shellfuncs/main/install | bash
 
 # setup codium editor
 # NOTE: there really is no benefit in stuffing the gpg url
