@@ -1,0 +1,20 @@
+#
+#
+# Common configurations across shell provisioners,
+# may be used by outside programs/scripts.
+
+# network configs, tied to the following projects: 
+#   vboxconfig
+MACADDRESS_ENV_VAR_NAME="MACADDRESS"
+
+SHELLFUNCS_VM_IPV4_ADDR="192.168.1.2"
+SHELLFUNCS_VM_SUBNET_MASK="255.255.255.0"
+SHELLFUNCS_VM_GATEWAY="192.168.1.1"
+# NOTES: index order of how they appear in VirtualBox, see 
+# packer-build-templates with the appropriately named template under 
+# vboxmanage attribute of builders. Numbers are used to parse for the
+# MAC address index (e.g. MACADDRESS1).
+SHELLFUNCS_HOSTONLYIF_INDEX="1"
+SHELLFUNCS_NATIF_INDEX="2"
+SHELLFUNCS_HOSTONLYIF_MACADDR_ENV_VAR_NAME="${MACADDRESS_ENV_VAR_NAME}${SHELLFUNCS_HOSTONLYIF_INDEX}"
+SHELLFUNCS_NATIF_MACADDR_ENV_VAR_NAME="${MACADDRESS_ENV_VAR_NAME}${SHELLFUNCS_NATIF_INDEX}"
