@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#
+# Shell script for packer's shell provisioner.
 
 sleep 30
 
@@ -30,7 +30,7 @@ echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
 # NOTES: installs some 'nice to have' pkgs. Also
 # makes sure I am part of the sudoer group!
 echo "$SSH_PASSWORD" | sudo --stdin apt-get install "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
-echo "$SSH_PASSWORD" | sudo --stdin usermod --append --groups sudo reap2sow1
+echo "$SSH_PASSWORD" | sudo --stdin usermod --append --groups sudo "$SSH_USER"
 
 # setup and install shellfuncs repo
 mkdir "$GIT_REPOS_PATH"
@@ -57,7 +57,9 @@ echo "$SSH_PASSWORD" | sudo --stdin mount VBoxGuestAdditions.iso "$MOUNT_FILE_PA
 echo "$SSH_PASSWORD" | sudo --stdin "${MOUNT_FILE_PATH}/VBoxLinuxAdditions.run"
 
 # packerbuilds.conf MAY contain env vars from build env
-wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
+wget "http://${PACKER_HTTP_ADDR}/packerbuilds.conf"
 echo "$SSH_PASSWORD" | sudo --stdin mv ./packerbuilds.conf /etc/
 
 echo "!!! End of provisioner script !!!"
+
+exit 0

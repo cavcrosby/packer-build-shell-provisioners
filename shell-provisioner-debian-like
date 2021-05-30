@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#
+# Shell script for packer's shell provisioner.
 
 sleep 30
 
@@ -11,7 +11,9 @@ echo "$SSH_PASSWORD" | sudo --stdin apt-get update
 echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
 
 # packerbuilds.conf MAY contain env vars from build env
-wget "http://$PACKER_HTTP_ADDR/packerbuilds.conf"
+wget "http://${PACKER_HTTP_ADDR}/packerbuilds.conf"
 echo "$SSH_PASSWORD" | sudo --stdin mv ./packerbuilds.conf /etc/
 
 echo "!!! End of provisioner script !!!"
+
+exit 0
