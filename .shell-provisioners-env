@@ -7,9 +7,9 @@
 #   vboxconfig
 MACADDRESS_ENV_VAR_NAME="MACADDRESS"
 
-SHELLFUNCS_VM_IPV4_ADDR="192.168.1.2"
-SHELLFUNCS_VM_SUBNET_MASK="255.255.255.0"
-SHELLFUNCS_VM_GATEWAY="192.168.1.1"
+export SHELLFUNCS_VM_IPV4_ADDR="192.168.1.2"
+export SHELLFUNCS_VM_SUBNET_MASK="255.255.255.0"
+export SHELLFUNCS_VM_GATEWAY="192.168.1.1"
 # NOTES: index order of how they appear in VirtualBox, see 
 # packer-build-templates with the appropriately named template under 
 # vboxmanage attribute of builders. Numbers are used to parse for the
