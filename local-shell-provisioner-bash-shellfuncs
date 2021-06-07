@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# Shell script for packer's shell-local provisioner.
+
+sleep 30
+
+echo "!!! Start of local provisioner script !!!"
+
+PROGRAM_NAME="$(basename "$0")"
+
+# turn off VM to add needed vnics besides the first one
+vboxmanage controlvm "$VM_NAME" poweroff
+
+# wait a few seconds before attempting to modify VM settings
+sleep 15
+
+# NOTES: hostonlyadapter<N> does not mean the 'N'th hostonlyif. Rather
+# <N> in this case represents the vnic number (e.g. hostonlyadapter<N> 
+# means the 'N'th vnic).
+vboxmanage modifyvm "$VM_NAME" --nic2 hostonly --hostonlyadapter2 "$NIC2_HOSTONLYIF_NAME"
+vboxmanage startvm "$VM_NAME" --type headless
+
+# NOTE: get sequential vnic MAC addresses, (e.g. MACADDRESS1 should be 
+# for nic1) and add them to a shell startup file to be pulled by the
+# next shell session
+mac_addresses="$(vboxmanage showvminfo "$VM_NAME" -machinereadable | grep '^macaddress*' | tr '[:lower:]' '[:upper:]')"
+
+# to know who added what to the config file
+{ 
+    echo ""
+    echo "# added by $PROGRAM_NAME"
+} >> "http/${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
+
+for mac_addr in $mac_addresses; do
+    # mac_addr should look like MACADDRESS1=1A2B3C4D5E6F
+    echo "export $mac_addr" >> "http/${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
+done
+
+echo "!!! End of local provisioner script !!!"
+
+exit 0

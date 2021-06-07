@@ -6,13 +6,10 @@ sleep 30
 
 echo "!!! Start of provisioner script !!!"
 
-MOUNT_FILE_PATH="/mnt"
 SYSTEM_DEPENDENCIES=(
-    build-essential
     curl
     git
     gnupg
-    linux-headers-"$(uname -r)"
     wget
 )
 
@@ -27,10 +24,6 @@ echo "$SSH_PASSWORD" | sudo --stdin apt-get install "${SYSTEM_DEPENDENCIES[@]}" 
 # through tasksel by installing a ubuntu desktop
 echo "!!! Now installing ubuntu desktop !!!"
 echo "$SSH_PASSWORD" | sudo --stdin tasksel install ubuntu-desktop
-
-echo "!!! Now installing VirtualBox Guest Additions !!!"
-echo "$SSH_PASSWORD" | sudo --stdin mount VBoxGuestAdditions.iso "$MOUNT_FILE_PATH"
-echo "$SSH_PASSWORD" | sudo --stdin "${MOUNT_FILE_PATH}/VBoxLinuxAdditions.run"
 
 # packerbuilds.conf MAY contain env vars from build env
 wget "http://${PACKER_HTTP_ADDR}/packerbuilds.conf"

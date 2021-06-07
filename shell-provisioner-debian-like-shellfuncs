@@ -6,7 +6,7 @@ sleep 30
 
 echo "!!! Start of provisioner script !!!"
 
-PROGRAM_NAME=$(basename "$0")
+PROGRAM_NAME="$(basename "$0")"
 NETWORK_DEV_PATH="/sys/class/net"
 SSH_DIR_PATH="${HOME}/.ssh"
 GITHUB_USER_NAME="cavcrosby"
@@ -34,19 +34,24 @@ SYSTEM_DEPENDENCIES=(
     wget
 )
 
+# NOTES: currently, this is set because of writing to the 
+# '/etc/network/interfaces'. Password caching for 15 minutes should be
+# sufficient.
+echo "$SSH_PASSWORD" | sudo --validate --stdin; 
+
 # normal VM updating, upgrading distro pkgs
-echo "$SSH_PASSWORD" | sudo --stdin apt-get update
-echo "$SSH_PASSWORD" | sudo --stdin apt-get dist-upgrade --assume-yes
+sudo apt-get update
+sudo apt-get dist-upgrade --assume-yes
 
 # NOTES: installs some 'nice to have' pkgs. Also
 # makes sure I am part of the sudoer group!
-echo "$SSH_PASSWORD" | sudo --stdin apt-get install "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
-echo "$SSH_PASSWORD" | sudo --stdin usermod --append --groups sudo "$SSH_USER"
+sudo apt-get install "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
+sudo usermod --append --groups sudo "$SSH_USER"
 
 # grab common provisioner configurations
-wget "http://${PACKER_HTTP_ADDR}/${SHELL_PROVISIONER_ENV_FILE_NAME}"
+wget --output-document "$SHELL_PROVISIONERS_CONFIG_FILE_NAME" "http://${PACKER_HTTP_ADDR}/${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
 # shellcheck disable=1090
-. "./${SHELL_PROVISIONER_ENV_FILE_NAME}"
+. "./${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
 
 HOSTONLYIF_MACADDR="${!SHELLFUNCS_HOSTONLYIF_MACADDR_ENV_VAR_NAME}"
 NATIF_MACADDR="${!SHELLFUNCS_NATIF_MACADDR_ENV_VAR_NAME}"
@@ -60,10 +65,10 @@ cat "${JENKINS_INFRASTRUCTURE_REPO_NAME}/configs/authorized_keys" >> "${SSH_DIR_
 # config sshd, first sed makes backup of original sshd_config (sshd_config.bak)
 # sed 's/old_text/new_text/' ... (the three '/'s can be replaced with
 # any char, just a delimiter)
-echo "$SSH_PASSWORD" | sudo --stdin sed --in-place=.bak --regexp-extended 's|^#?PubkeyAuthentication.+|PubkeyAuthentication yes|' /etc/ssh/sshd_config
-echo "$SSH_PASSWORD" | sudo --stdin sed --in-place --regexp-extended 's|^#?PasswordAuthentication.+|PasswordAuthentication no|' /etc/ssh/sshd_config
-echo "$SSH_PASSWORD" | sudo --stdin sed --in-place --regexp-extended 's|^#?AuthorizedKeysFile.+|AuthorizedKeysFile    .ssh/authorized_keys|' /etc/ssh/sshd_config
-echo "$SSH_PASSWORD" | sudo --stdin systemctl restart sshd
+sudo sed --in-place=.bak --regexp-extended 's|^#?PubkeyAuthentication.+|PubkeyAuthentication yes|' /etc/ssh/sshd_config
+sudo sed --in-place --regexp-extended 's|^#?PasswordAuthentication.+|PasswordAuthentication no|' /etc/ssh/sshd_config
+sudo sed --in-place --regexp-extended 's|^#?AuthorizedKeysFile.+|AuthorizedKeysFile    .ssh/authorized_keys|' /etc/ssh/sshd_config
+sudo systemctl restart sshd
 
 # NOTE: shellcheck did not like my initial implementation when using a for
 # loop with find, for reference:
@@ -73,12 +78,14 @@ do
     # we do want to match on globbing rather than literal expanded str
     # shellcheck disable=2254
     case "$nic" in
-        ${NIC_GLOBS["$LOOPBACK_INTERFACE_GLOB"]})   "$((loopback_interfaces_counter++))"
+        ${NIC_GLOBS["$LOOPBACK_INTERFACE_GLOB"]})   # don't care to see the shell complain about running an 'int' command
+                                                    "$((loopback_interfaces_counter++))" > /dev/null 2>&1
+                                                    LOOPBACK_NAME="$nic"
                                                     ;;
-        ${NIC_GLOBS["$ETHERNET_INTERFACE_GLOB"]})   "$((ethernet_interfaces_counter++))"
-                                                    if [ "$(cat ${NETWORK_DEV_PATH}/"${nic}"/address)" = "$HOSTONLYIF_MACADDR" ]; then
+        ${NIC_GLOBS["$ETHERNET_INTERFACE_GLOB"]})   "$((ethernet_interfaces_counter++))" > /dev/null 2>&1
+                                                    if [ "$(tr --delete < "${NETWORK_DEV_PATH}"/"${nic}"/address ':' | tr '[:lower:]' '[:upper:]')" = "$HOSTONLYIF_MACADDR" ]; then
                                                         HOSTONLYIF_NAME="$nic"
-                                                    elif [ "$(cat ${NETWORK_DEV_PATH}/"${nic}"/address)" = "$NATIF_MACADDR" ]; then
+                                                    elif [ "$(tr --delete < "${NETWORK_DEV_PATH}"/"${nic}"/address ':' | tr '[:lower:]' '[:upper:]')" = "$NATIF_MACADDR" ]; then
                                                         NATIF_NAME="$nic"
                                                     else
                                                         echo "${PROGRAM_NAME}: unexpected ethernet interface was found"
@@ -98,9 +105,9 @@ if [ "$ethernet_interfaces_counter" -lt 2 ]; then
     exit 1
 fi
 
-# NOTES: quoting not needed here for env vars. Also, ok with
+# NOTES: quoting not needed in heredoc for env vars. Also, ok with
 # writing to interface file vs creating a new file in interfaces.d
-cat << _EOF_ >> "/etc/network/interfaces"
+cat << _EOF_ | sudo --preserve-env tee --append "/etc/network/interfaces"
 auto $LOOPBACK_NAME $NATIF_NAME $HOSTONLYIF_NAME
 
 iface $LOOPBACK_NAME inet loopback
@@ -118,12 +125,12 @@ _EOF_
 # for good practice, disable root account
 # credits go to:
 # https://unix.stackexchange.com/questions/383301/should-i-disable-the-root-account-on-my-debian-pc-for-security
-echo "$SSH_PASSWORD" | sudo passwd --delete root
-echo "$SSH_PASSWORD" | sudo passwd --lock root
+sudo passwd --delete root
+sudo passwd --lock root
 
 # packerbuilds.conf MAY contain env vars from build env
 wget "http://${PACKER_HTTP_ADDR}/packerbuilds.conf"
-echo "$SSH_PASSWORD" | sudo --stdin mv ./packerbuilds.conf /etc/
+sudo mv ./packerbuilds.conf /etc/
 
 echo "!!! End of provisioner script !!!"
 
