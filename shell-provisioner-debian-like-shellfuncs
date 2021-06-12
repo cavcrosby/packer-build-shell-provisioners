@@ -10,7 +10,14 @@ PROGRAM_NAME="$(basename "$0")"
 NETWORK_DEV_PATH="/sys/class/net"
 SSH_DIR_PATH="${HOME}/.ssh"
 GITHUB_USER_NAME="cavcrosby"
+export GIT_REPOS_PATH="${HOME}/git"
+export SHELL_DOTFILE_NAME=".profile"
 # y ==> yes
+export SHELLFUNCS_AUTOMATED_INSTALL="y"
+SHUNIT_GIT_REPO_URL="https://github.com/kward/shunit2"
+# ...-temp needed assuming repo_name = program_name
+SHUNIT_REPO_NAME="$(basename "$SHUNIT_GIT_REPO_URL")-temp"
+SHUNIT_PROGRAM_NAME="shunit2"
 JENKINS_INFRASTRUCTURE_REPO_URL="https://${GITHUB_USER_NAME}:${GITHUB_SECRET}@github.com/${GITHUB_USER_NAME}/jenkins-infrastructure.git"
 JENKINS_INFRASTRUCTURE_REPO_NAME="$(basename "$JENKINS_INFRASTRUCTURE_REPO_URL")"
 # NOTE: can add more types of NICs as needed, the globs may change 
@@ -24,20 +31,30 @@ declare -A NIC_GLOBS=(
     ["$LOOPBACK_INTERFACE_GLOB"]="lo*"
     ["$ETHERNET_INTERFACE_GLOB"]="en*"
 )
+# libgl1-mesa-glx needed running shellfuncs_install_tortoisehg, reference:
+# https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
 SYSTEM_DEPENDENCIES=(
     build-essential
     curl
     git
     gnupg
+    libgl1-mesa-glx
     python3
     sudo
     wget
 )
 
 # NOTES: currently, this is set because of writing to the 
-# '/etc/network/interfaces'. Password caching for 15 minutes should be
-# sufficient.
-echo "$SSH_PASSWORD" | sudo --validate --stdin; 
+# '/etc/network/interfaces' and for writing a sudoer rule for the SSH_USER. 
+# Technically the 
+# Password caching for 15 minutes should be sufficient.
+echo "$SSH_PASSWORD" | sudo --validate --stdin;
+echo "$SSH_USER ALL=(ALL:ALL) NOPASSWD: ALL" | sudo --preserve-env tee "/etc/sudoers.d/${SSH_USER}"
+
+# NOTE: sets git client information so shellfuncs can perform 'git pulls' when
+# the shell reads the appropriate shell startup file
+git config --global user.email "conner@cavcrosby.tech"
+git config --global user.name "Conner Crosby"
 
 # normal VM updating, upgrading distro pkgs
 sudo apt-get update
@@ -47,6 +64,28 @@ sudo apt-get dist-upgrade --assume-yes
 # makes sure I am part of the sudoer group!
 sudo apt-get install "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
 sudo usermod --append --groups sudo "$SSH_USER"
+
+# NOTE: setup and install shellfuncs repo, setting GIT_REPOS_PATH for
+# shellfuncs job to use later
+mkdir "$GIT_REPOS_PATH"
+curl --silent https://raw.githubusercontent.com/cavcrosby/shellfuncs/main/install | bash
+{ 
+    echo ""
+    cat << _EOF_
+# added by $PROGRAM_NAME
+GIT_REPOS_PATH="${GIT_REPOS_PATH}"
+export GIT_REPOS_PATH
+_EOF_
+} >> "${HOME}/${SHELL_DOTFILE_NAME}"
+
+# shellcheck disable=1090
+. "${HOME}/${SHELL_DOTFILE_NAME}"
+
+# grab shunit2 which is used as part of my test suite
+git clone --quiet "$SHUNIT_GIT_REPO_URL" "$SHUNIT_REPO_NAME"
+# assumes the 'shunit2' script is located at repo root
+cp "${SHUNIT_REPO_NAME}/${SHUNIT_PROGRAM_NAME}" "$SHELLFUNCS_TEST_SCRIPTS_PATH"
+rm --recursive --force "$SHUNIT_REPO_NAME"
 
 # grab common provisioner configurations
 wget --output-document "$SHELL_PROVISIONERS_CONFIG_FILE_NAME" "http://${PACKER_HTTP_ADDR}/${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
