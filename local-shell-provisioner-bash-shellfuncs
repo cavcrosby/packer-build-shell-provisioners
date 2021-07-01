@@ -29,11 +29,11 @@ mac_addresses="$(vboxmanage showvminfo "$VM_NAME" -machinereadable | grep '^maca
 { 
     echo ""
     echo "# added by $PROGRAM_NAME"
-} >> "http/${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
+} >> "http/${SHELL_PROVISIONERS_CONFIG_FILE}"
 
 for mac_addr in $mac_addresses; do
     # mac_addr should look like MACADDRESS1=1A2B3C4D5E6F
-    echo "export $mac_addr" >> "http/${SHELL_PROVISIONERS_CONFIG_FILE_NAME}"
+    echo "export $mac_addr" >> "http/${SHELL_PROVISIONERS_CONFIG_FILE}"
 done
 
 echo "!!! End of local provisioner script !!!"
