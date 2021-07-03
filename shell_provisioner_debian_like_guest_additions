@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# Shell script for packer's shell provisioner.
+
+sleep 30
+
+echo "!!! Start of provisioner script !!!"
+
+# constants
+MOUNT_FILE_PATH="/mnt"
+SYSTEM_DEPENDENCIES=(
+    build-essential
+    linux-headers-"$(uname --kernel-release)"
+    sudo
+)
+
+# normal VM updating, installing/upgrading distro pkgs
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get update
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get dist-upgrade --assume-yes
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get install "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
+
+echo "!!! Now installing VirtualBox Guest Additions !!!"
+echo "${SSH_PASSWORD}" | sudo --stdin mount VBoxGuestAdditions.iso "${MOUNT_FILE_PATH}"
+echo "${SSH_PASSWORD}" | sudo --stdin "${MOUNT_FILE_PATH}/VBoxLinuxAdditions.run"
+
+echo "!!! End of provisioner script, rebooting !!!"
+
+# VM should reboot regardless of what provisioner/processor is ran next
+echo "${SSH_PASSWORD}" | sudo --stdin /sbin/reboot
+
+exit 0
