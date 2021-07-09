@@ -2,6 +2,8 @@
 #
 # Shell script for packer's shell provisioner.
 
+# TODO(cavcrosby): eventually remove this file, due to shellfuncs project no longer being supported.
+
 sleep 30
 
 echo "!!! Start of provisioner script !!!"
