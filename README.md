@@ -1,4 +1,4 @@
-# packer-build-shell-provisioners
+# packer-shell-provisioners
 
 For reference, see https://github.com/cavcrosby/jenkins-packerbuilds.
 
