@@ -69,14 +69,14 @@ wget --output-document "${vbox_deb_pkgname}" "${VBOX_DEB_PKG_URL}"
 echo "${SSH_PASSWORD}" | sudo --stdin apt-get install "${PWD}/${vbox_deb_pkgname}" --assume-yes
 
 # install few aliases
-cat << _EOF_ > "/home/${SSH_USER}/.bash_aliases"
-    alias egrep='egrep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias grep='grep --color=auto'
-    alias l='ls -CF'
-    alias la='ls -A'
-    alias ll='ls -alF'
-    alias ls='ls --color=auto'
+cat << _EOF_ > "${HOME}/.bash_aliases"
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+alias l='ls -CF'
+alias la='ls -A'
+alias ll='ls -alF'
+alias ls='ls --color=auto'
 _EOF_
 
 # packerbuilds.conf MAY contain env vars from build env
