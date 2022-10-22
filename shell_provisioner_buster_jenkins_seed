@@ -1,0 +1,102 @@
+#!/bin/bash
+#
+# Shell script for packer's shell provisioner.
+
+sleep 30
+
+echo "!!! Start of provisioner script !!!"
+
+# constants
+PROGRAM_NAME="$(basename "$0")"
+readonly PROGRAM_NAME
+GITHUB_USER_NAME="cavcrosby"
+GIT_REPOS_PATH="${HOME}/git"
+JENKINS_USER_NAME="jenkins"
+JENKINS_HOME="/var/lib/jenkins/"
+SEED_WORKSPACE="${JENKINS_HOME}/workspace/seed/"
+JENKINS_GPG_KEY_URL="https://pkg.jenkins.io/debian-stable/jenkins.io.key"
+JENKINS_DEB_REPO_URL="https://pkg.jenkins.io/debian-stable"
+VBOX_DEB_PKG_URL="https://download.virtualbox.org/virtualbox/6.1.22/virtualbox-6.1_6.1.22-144080~Debian~buster_amd64.deb"
+vbox_deb_pkgname="$(basename ${VBOX_DEB_PKG_URL})"
+
+# sudo and gnupg are required. gnupg for dealing with package public key pairs.
+SYSTEM_DEPENDENCIES=(
+    "build-essential"
+    "git"
+    "gnupg"
+    "linux-headers-$(uname --kernel-release)"
+    "stow"
+    "sudo"
+    "wget"
+)
+GIT_REPO_NAMES=(
+    "dotfiles"
+    "jenkins-packerbuilds"
+)
+JENKINS_DEPENDENCIES=(
+    "openjdk-11-jdk"
+)
+
+# normal VM updating, upgrading distro pkgs
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get update
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get dist-upgrade --assume-yes
+
+# general updating, and install system dependencies
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get install "${JENKINS_DEPENDENCIES[@]}" "${SYSTEM_DEPENDENCIES[@]}" --assume-yes
+echo "${SSH_PASSWORD}" | sudo --stdin usermod --append --groups sudo "${SSH_USER}"
+
+# sets initial git client information so git repos can be retrieved
+git config --global user.email "conner@cavcrosby.tech"
+git config --global user.name "Conner Crosby"
+
+echo "!!! Setting up Jenkins !!!"
+
+# install jenkins from stable release
+wget --output-document - "${JENKINS_GPG_KEY_URL}" | sudo apt-key add -
+# This is one case where sudo cannot expect the password to come from stdin,
+# betting on sudo just not asking for the password again.
+echo "deb ${JENKINS_DEB_REPO_URL} binary/" | sudo tee --append "/etc/apt/sources.list.d/jenkins.list"
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get update
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get install jenkins --assume-yes
+echo "${SSH_PASSWORD}" | sudo --stdin systemctl start jenkins
+
+echo "!!! End setting up Jenkins !!!"
+
+# install virtualbox
+wget --output-document "${vbox_deb_pkgname}" "${VBOX_DEB_PKG_URL}"
+echo "${SSH_PASSWORD}" | sudo --stdin apt-get install "${PWD}/${vbox_deb_pkgname}" --assume-yes
+
+echo "!!! Now installing debian desktop !!!"
+echo "${SSH_PASSWORD}" | sudo tasksel install desktop
+
+# make dir for git repos
+mkdir --parents "${GIT_REPOS_PATH}"
+
+# install a few git repos
+for git_repo_name in "${GIT_REPO_NAMES[@]}"; do
+    git clone "https://github.com/${GITHUB_USER_NAME}/${git_repo_name}" "${git_repo_name}"
+    case "${git_repo_name}" in
+        jenkins-packerbuilds)   cd "${git_repo_name}" || exit 1
+                                make all
+                                ln --symbolic --force "${PWD}/configs" "${SEED_WORKSPACE}/configs"
+                                ;;
+    esac
+done
+
+# Debian is notorious for not having /sbin (any variant, e.g. /usr/sbin/) in
+# the PATH, so will add it for SSH_USER.
+{
+    echo ""
+    cat << _EOF_
+# added by ${PROGRAM_NAME}
+export PATH=\${PATH}:/usr/sbin
+_EOF_
+} >> "${HOME}/.bashrc"
+
+# packerbuilds.conf MAY contain env vars from build env
+wget "http://${PACKER_HTTP_ADDR}/packerbuilds.conf"
+echo "${SSH_PASSWORD}" | sudo --stdin mv "${PWD}/packerbuilds.conf" "/etc/"
+
+echo "!!! End of provisioner script !!!"
+
+exit 0
